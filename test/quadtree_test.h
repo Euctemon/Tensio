@@ -1,11 +1,6 @@
-#include <stdlib.h>
 #include <stdio.h>
-
-enum Position {
-    INSIDE,
-    OUTSIDE,
-    BOUDARY
-};
+#include <stdbool.h>
+#include <assert.h>
 
 struct Point {
     double x;
@@ -27,3 +22,7 @@ struct QuadPool {
 
     struct QuadTree* (*trees)[];
 };
+
+bool intersect(struct Point p1, struct Point p2, struct Point p3, struct Point p4);
+
+bool in_unit_range(double a, double b);

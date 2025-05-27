@@ -1,15 +1,20 @@
 CC=gcc
 CFLAGS=-Wall -Wpedantic -std=c23
 
-all: main
-main: main.o quadtree.o
-	$(CC) $(CFLAGS) -g -o main main.o quadtree.o
+SRC=source/quadtree.c source/main.c
+TEST_SRC=source/quadtree.c test/quadtree_test.c
 
-main.o: main.c quadtree.h
-	$(CC) $(CFLAGS) -c main.c
+TARGET=tensio
+TEST_TARGET=test_tensio
 
-quadtree.o: quadtree.c quadtree.h
-	$(CC) $(CFLAGS) -c quadtree.c
+
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
+
+test: $(TEST_SRC)
+	$(CC) $(CFLAGS) -Itest -o $(TEST_TARGET) $(TEST_SRC)
 
 clean:
-	rm -f *.o main
+	rm -f $(TARGET) $(TEST_TARGET)
