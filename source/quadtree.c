@@ -37,10 +37,53 @@ bool in_unit_range(double a, double b) {
 
 // Intersection of lines p1->p2 and p3->p4
 // Overlapping lines do not intersect
-bool intersect(struct Point p1, struct Point p2, struct Point p3, struct Point p4) {
+bool line_intersect(struct Point p1, struct Point p2, struct Point p3, struct Point p4) {
     double det = (p2.x - p1.x) * (p3.y - p4.y) - (p2.y - p1.y) * (p3.x - p4.x);
     double det1 = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
     double det2 = (p3.x - p1.x) * (p3.y - p4.y) - (p3.y - p1.y) * (p3.x - p4.x);
 
     return in_unit_range(det1, det) && in_unit_range(det2,det);
+}
+
+struct Region bounding_region(struct Geometry geom) {
+    double x_min = (*geom.points)[0].x;
+    double x_max = (*geom.points)[0].y;
+    double y_min = (*geom.points)[0].x;
+    double y_max = (*geom.points)[0].y;
+
+    for (size_t i = 1; i < geom.size; i++) {
+        if ((*geom.points)[i].x < x_min) x_min = (*geom.points)[i].x;
+        if ((*geom.points)[i].x > x_max) x_max = (*geom.points)[i].x;
+        if ((*geom.points)[i].y < y_min) y_min = (*geom.points)[i].y;
+        if ((*geom.points)[i].y > y_max) y_max = (*geom.points)[i].y;
+    }
+
+    x_min-=10.0;
+    x_max+=10.0;
+    y_min-=10.0;
+    y_max+=10.0;
+
+    return (struct Region){x_min,x_max, y_min,y_max};
+}
+
+void geometry_to_svg(struct Geometry geom, const char filename[]) {
+    FILE* file = fopen(filename, "w");
+    struct Region box = bounding_region(geom);
+    int width = (int)(box.max_x-box.min_x+20.0);
+    int height = (int)(box.max_y-box.min_y+20.0);
+
+    if (!file) {
+        fprintf(stderr, "Failed to open file.\n");
+        return;
+    }
+    
+    fprintf(file, "<svg xmlns=\"http://www.w3.org/2000/svg\" ");
+    fprintf(file, "viewBox=\"%d, %d, %d, %d\">\n", (int)(box.min_x), (int)(box.min_y),width, height);
+    fprintf(file, "<polyline points=\"");
+
+    for (size_t i = 0; i < geom.size; i++) {
+        fprintf(file, "%f,%f ", (*geom.points)[i].x, (*geom.points)[i].y);
+    }
+    fprintf(file, "\" stroke=\"green\" fill=\"none\" stroke-width=\"0.5\" />\n");
+    fprintf(file, "</svg>\n");
 }
