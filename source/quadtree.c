@@ -9,7 +9,7 @@ struct QuadPool* quad_pool_init(unsigned int init_capacity) {
         exit(EXIT_FAILURE);
     }
 
-    pool_pt->trees = malloc(init_capacity * sizeof(struct QuadTree*));
+    pool_pt->trees = malloc(init_capacity * sizeof(struct QuadTree));
 
     if (pool_pt->trees == NULL) {
         fprintf(stderr, "Failed to allocate quad pool array.\n");
@@ -58,32 +58,52 @@ struct Region bounding_region(struct Geometry geom) {
         if ((*geom.points)[i].y > y_max) y_max = (*geom.points)[i].y;
     }
 
-    x_min-=10.0;
-    x_max+=10.0;
-    y_min-=10.0;
-    y_max+=10.0;
-
     return (struct Region){x_min,x_max, y_min,y_max};
 }
 
-void geometry_to_svg(struct Geometry geom, const char filename[]) {
-    FILE* file = fopen(filename, "w");
-    struct Region box = bounding_region(geom);
-    int width = (int)(box.max_x-box.min_x+20.0);
-    int height = (int)(box.max_y-box.min_y+20.0);
-
-    if (!file) {
-        fprintf(stderr, "Failed to open file.\n");
-        return;
+bool is_leaf(struct QuadTree tree) {
+    for (size_t i = 0; i < 4; i++) {
+        if (tree.Nodes[i] != NULL) return false;
     }
     
-    fprintf(file, "<svg xmlns=\"http://www.w3.org/2000/svg\" ");
-    fprintf(file, "viewBox=\"%d, %d, %d, %d\">\n", (int)(box.min_x), (int)(box.min_y),width, height);
-    fprintf(file, "<polyline points=\"");
+    return true;
+}
 
-    for (size_t i = 0; i < geom.size; i++) {
-        fprintf(file, "%f,%f ", (*geom.points)[i].x, (*geom.points)[i].y);
+bool region_intersect(struct Region region, struct Geometry geom) {
+    struct Point LB = {region.min_x, region.min_y};
+    struct Point LU = {region.min_x, region.max_y};
+    struct Point RB = {region.max_x, region.min_y};
+    struct Point RU = {region.max_x, region.max_y};
+
+    for (size_t i = 0; i < geom.size - 1; i++) {
+     if (line_intersect(LB, LU, (*geom.points)[i], (*geom.points)[i+1])) return true;
+     if (line_intersect(LU, RU, (*geom.points)[i], (*geom.points)[i+1])) return true;
+     if (line_intersect(RU, RB, (*geom.points)[i], (*geom.points)[i+1])) return true;
+     if (line_intersect(RB, LB, (*geom.points)[i], (*geom.points)[i+1])) return true;
     }
-    fprintf(file, "\" stroke=\"green\" fill=\"none\" stroke-width=\"0.5\" />\n");
-    fprintf(file, "</svg>\n");
+
+    return false;
+}
+
+
+void quadtree_compute(struct QuadPool* pool, struct Geometry geom) {
+    unsigned int processed_trees = 0;
+    
+    (*pool->trees)[processed_trees].box = bounding_region(geom);
+    pool->filled++;
+
+    while (processed_trees != pool->filled) {
+        if (region_intersect((*pool->trees)[processed_trees].box, geom)) {
+            if (pool->filled + 4 > pool->capacity) {
+                fprintf(stderr, "Pool array has not enough capacity.\n");
+                return;
+            }
+
+            for (size_t i = 0; i < 4; i++) {
+                (*pool->trees)[processed_trees].Nodes[i] = &(*pool->trees)[pool->filled];
+                pool->filled++;
+            }
+        }
+        processed_trees++;
+    }
 }
