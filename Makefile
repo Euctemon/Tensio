@@ -1,7 +1,7 @@
 CC=gcc
-CFLAGS=-Wall -Wpedantic -std=c23
+CFLAGS=-g -Wall -Wpedantic -std=c23
 
-SRC=source/quadtree.c source/main.c
+SRC=source/quadtree.c source/svg.c source/main.c
 TEST_SRC=source/quadtree.c test/quadtree_test.c
 
 TARGET=tensio
